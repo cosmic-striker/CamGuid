@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heat Map - CamGuid</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    {% include 'partials/styles.html' %}
+</head>
+<body class="bg-dark">
+    {% include 'partials/navbar.html' %}
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            {% include 'partials/sidebar.html' %}
+            <main class="col-md-10 ms-sm-auto col-lg-10 px-4 main-content">
+                <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2 text-white"><i class="fas fa-fire me-2"></i>Heat Map Analysis</h1>
+                    <button class="btn btn-success" onclick="generateHeatMap()">
+                        <i class="fas fa-sync me-1"></i>Generate
+                    </button>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="card card-dark">
+                            <div class="card-body">
+                                <label class="form-label">Select Camera</label>
+                                <select class="form-select mb-3">
+                                    {% for cam in cameras %}
+                                    <option>{{ cam.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label class="form-label">Time Range</label>
+                                <select class="form-select mb-3">
+                                    <option>Last Hour</option>
+                                    <option>Last 4 Hours</option>
+                                    <option>Last 24 Hours</option>
+                                    <option>Last Week</option>
+                                </select>
+                                <label class="form-label">Heat Intensity</label>
+                                <input type="range" class="form-range" min="1" max="100" value="50">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card card-dark">
+                            <div class="card-body text-center" style="height: 500px; display: flex; align-items: center; justify-content: center;">
+                                <div>
+                                    <i class="fas fa-fire fa-4x text-danger mb-3"></i>
+                                    <p class="text-muted">Heat map will be displayed here</p>
+                                    <button class="btn btn-primary" onclick="generateHeatMap()">Generate Heat Map</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function generateHeatMap() {
+            alert('Generating heat map...');
+        }
+    </script>
+</body>
+</html>
