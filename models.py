@@ -8,24 +8,64 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import secrets
 import base64
+from cryptography.fernet import Fernet
 
 db = SQLAlchemy()
 
-# Simple encryption for camera credentials (temporary - replace with proper encryption later)
-def simple_encrypt(text):
-    """Simple base64 encoding for now - replace with proper encryption"""
-    if not text:
-        return ""
-    return base64.b64encode(text.encode()).decode()
+# Fernet encryption for camera credentials (secure production-ready encryption)
+def get_or_create_encryption_key():
+    """Get or create Fernet encryption key for camera credentials"""
+    key_file = 'instance/encryption.key'
+    if os.path.exists(key_file):
+        with open(key_file, 'rb') as f:
+            return f.read()
+    else:
+        os.makedirs('instance', exist_ok=True)
+        key = Fernet.generate_key()
+        with open(key_file, 'wb') as f:
+            f.write(key)
+        return key
 
-def simple_decrypt(encoded_text):
-    """Simple base64 decoding for now - replace with proper decryption"""
-    if not encoded_text:
+# Initialize Fernet cipher
+try:
+    encryption_key = get_or_create_encryption_key()
+    cipher = Fernet(encryption_key)
+except Exception as e:
+    print(f"Warning: Could not initialize encryption: {e}")
+    cipher = None
+
+def secure_encrypt(text):
+    """Secure encryption using Fernet (AES 128)"""
+    if not text or not cipher:
         return ""
     try:
-        return base64.b64decode(encoded_text.encode()).decode()
-    except:
+        return cipher.encrypt(text.encode()).decode()
+    except Exception as e:
+        print(f"Encryption error: {e}")
         return ""
+
+def secure_decrypt(encrypted_text):
+    """Secure decryption using Fernet (AES 128)"""
+    if not encrypted_text or not cipher:
+        return ""
+    try:
+        return cipher.decrypt(encrypted_text.encode()).decode()
+    except Exception as e:
+        # Try fallback to Base64 for backward compatibility
+        try:
+            return base64.b64decode(encrypted_text.encode()).decode()
+        except:
+            print(f"Decryption error: {e}")
+            return ""
+
+# Legacy functions for backward compatibility (deprecated)
+def simple_encrypt(text):
+    """Legacy: Simple base64 encoding - DEPRECATED, use secure_encrypt"""
+    return secure_encrypt(text)
+
+def simple_decrypt(encoded_text):
+    """Legacy: Simple base64 decoding - DEPRECATED, use secure_decrypt"""
+    return secure_decrypt(encoded_text)
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -52,17 +92,17 @@ class Camera(db.Model):
     port = db.Column(db.Integer, default=554)
 
     def set_credentials(self, username, password):
-        """Store camera credentials securely using encryption"""
+        """Store camera credentials securely using Fernet encryption"""
         self.username = username
         if password:
-            # Encrypt the password (temporary simple encryption)
-            self.password_encrypted = simple_encrypt(password)
+            # Encrypt the password using Fernet (AES 128)
+            self.password_encrypted = secure_encrypt(password)
 
     def get_decrypted_password(self):
-        """Decrypt and return the camera password"""
+        """Decrypt and return the camera password using Fernet"""
         if self.password_encrypted:
             try:
-                return simple_decrypt(self.password_encrypted)
+                return secure_decrypt(self.password_encrypted)
             except Exception:
                 return None
         return None
