@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events - Smart Surveillance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f1214 0%, #1a1d20 50%, #2d1b4e 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: rgba(15, 18, 20, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0.875rem 1.5rem;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .event-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .event-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+        }
+
+        .event-card.event-critical {
+            border-left-color: #ef4444;
+        }
+
+        .event-card.event-warning {
+            border-left-color: #f59e0b;
+        }
+
+        .event-card.event-info {
+            border-left-color: #06b6d4;
+        }
+
+        .event-card.event-success {
+            border-left-color: #10b981;
+        }
+
+        .event-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: white;
+        }
+
+        .icon-critical {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .icon-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .icon-info {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        }
+
+        .icon-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            padding: 1rem;
+        }
+
+        .time-badge {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #a5b4fc;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.813rem;
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/sidebar_modern.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="text-white mb-1">
+                    <i class="fas fa-bell me-2"></i>Event Management
+                </h2>
+                <p class="text-white-50 mb-0">Monitor and manage security events</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-light">
+                    <i class="fas fa-download me-2"></i>Export Events
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Total Events</p>
+                            <h4 class="text-white mb-0">156</h4>
+                        </div>
+                        <i class="fas fa-bell text-white-50" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Critical</p>
+                            <h4 class="text-danger mb-0">3</h4>
+                        </div>
+                        <i class="fas fa-exclamation-circle text-danger" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Warnings</p>
+                            <h4 class="text-warning mb-0">12</h4>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Info</p>
+                            <h4 class="text-info mb-0">141</h4>
+                        </div>
+                        <i class="fas fa-info-circle text-info" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="glass-card p-3 mb-4">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div class="btn-group" role="group">
+                        <button class="filter-btn active" onclick="filterEvents('all')">All Events</button>
+                        <button class="filter-btn" onclick="filterEvents('critical')">Critical</button>
+                        <button class="filter-btn" onclick="filterEvents('warning')">Warning</button>
+                        <button class="filter-btn" onclick="filterEvents('info')">Info</button>
+                        <button class="filter-btn" onclick="filterEvents('success')">Success</button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Search events..." id="searchEvents" onkeyup="searchEvents()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Events List -->
+        <div class="glass-card p-4">
+            <h5 class="text-white mb-4">Recent Events</h5>
+            
+            <div class="event-list" id="eventsList">
+                <!-- Critical Event -->
+                <div class="event-card event-critical mb-3" data-type="critical">
+                    <div class="d-flex gap-3">
+                        <div class="event-icon icon-critical">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-white mb-0">Unauthorized Access Attempt</h6>
+                                <span class="time-badge">2 mins ago</span>
+                            </div>
+                            <p class="text-white-50 mb-2 small">Multiple failed login attempts detected from IP 192.168.1.150</p>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-danger">Critical</span>
+                                <span class="text-white-50 small">
+                                    <i class="fas fa-camera me-1"></i>Main Entrance
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Event -->
+                <div class="event-card event-warning mb-3" data-type="warning">
+                    <div class="d-flex gap-3">
+                        <div class="event-icon icon-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-white mb-0">Motion Detected</h6>
+                                <span class="time-badge">5 mins ago</span>
+                            </div>
+                            <p class="text-white-50 mb-2 small">Motion detected in restricted zone A during non-business hours</p>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-warning">Warning</span>
+                                <span class="text-white-50 small">
+                                    <i class="fas fa-camera me-1"></i>Warehouse Zone A
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Event -->
+                <div class="event-card event-info mb-3" data-type="info">
+                    <div class="d-flex gap-3">
+                        <div class="event-icon icon-info">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-white mb-0">Camera Connected</h6>
+                                <span class="time-badge">12 mins ago</span>
+                            </div>
+                            <p class="text-white-50 mb-2 small">Camera "Parking Lot 3" successfully connected to the system</p>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-info">Info</span>
+                                <span class="text-white-50 small">
+                                    <i class="fas fa-camera me-1"></i>Parking Lot 3
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Success Event -->
+                <div class="event-card event-success mb-3" data-type="success">
+                    <div class="d-flex gap-3">
+                        <div class="event-icon icon-success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-white mb-0">System Backup Completed</h6>
+                                <span class="time-badge">1 hour ago</span>
+                            </div>
+                            <p class="text-white-50 mb-2 small">Automated backup of surveillance data completed successfully</p>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-success">Success</span>
+                                <span class="text-white-50 small">
+                                    <i class="fas fa-server me-1"></i>System
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- More Info Events -->
+                <div class="event-card event-info mb-3" data-type="info">
+                    <div class="d-flex gap-3">
+                        <div class="event-icon icon-info">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="text-white mb-0">User Login</h6>
+                                <span class="time-badge">2 hours ago</span>
+                            </div>
+                            <p class="text-white-50 mb-2 small">Administrator logged in from 192.168.1.100</p>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-info">Info</span>
+                                <span class="text-white-50 small">
+                                    <i class="fas fa-desktop me-1"></i>Admin Panel
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <p class="text-white-50 mb-0 small">Showing 5 of 156 events</p>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#"><i class="fas fa-chevron-left"></i></a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function filterEvents(type) {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const events = document.querySelectorAll('.event-card');
+            events.forEach(event => {
+                if (type === 'all') {
+                    event.style.display = '';
+                } else {
+                    event.style.display = event.getAttribute('data-type') === type ? '' : 'none';
+                }
+            });
+        }
+
+        function searchEvents() {
+            const searchTerm = document.getElementById('searchEvents').value.toLowerCase();
+            const events = document.querySelectorAll('.event-card');
+            
+            events.forEach(event => {
+                const text = event.textContent.toLowerCase();
+                event.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
