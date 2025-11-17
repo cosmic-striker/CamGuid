@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Settings - Smart Surveillance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --dark-bg: #1a1d20;
+            --darker-bg: #0f1214;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker-bg) 0%, var(--dark-bg) 100%);
+            min-height: 100vh;
+        }
+
+        .settings-header {
+            background: var(--primary-gradient);
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 1rem 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .glass-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .glass-card h4 {
+            color: white;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .glass-card h4 i {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-label {
+            color: rgba(255,255,255,0.8);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(255,255,255,0.15);
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+            color: white;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+
+        .form-text {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .save-btn {
+            padding: 0.875rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            border: none;
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .reset-btn {
+            padding: 0.875rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: transparent;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .info-box {
+            background: rgba(13, 202, 240, 0.1);
+            border: 1px solid rgba(13, 202, 240, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .warning-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.1);
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            width: 250px;
+        }
+
+        .sidebar .nav-link {
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar .nav-link.active {
+            color: white;
+            background: var(--primary-gradient);
+        }
+
+        .sidebar-heading {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .main-content-with-sidebar {
+            margin-left: 250px;
+            padding-top: 56px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+            .main-content-with-sidebar {
+                margin-left: 0;
+            }
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: var(--success-gradient);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/navbar.html' %}
+    {% include 'partials/sidebar.html' %}
+
+    <div class="main-content-with-sidebar">
+        <div class="settings-header">
+            <div class="container-fluid">
+                <h1 class="text-center text-white mb-0">
+                    <i class="fas fa-cog me-3"></i>
+                    System Settings
+                </h1>
+                <p class="text-center text-white-50 mb-0 mt-2">Configure your surveillance system</p>
+            </div>
+        </div>
+
+        <div class="container-fluid pb-5">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' }} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/save_settings">
+                <div class="row">
+                    <!-- Network Settings -->
+                    <div class="col-lg-6">
+                        <div class="glass-card">
+                            <h4>
+                                <i class="fas fa-network-wired me-2"></i>
+                                Network Configuration
+                            </h4>
+                            
+                            <div class="info-box">
+                                <i class="fas fa-info-circle me-2"></i>
+                                These settings control network scanning and camera discovery.
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="ip_range" class="form-label">
+                                    <i class="fas fa-globe me-2"></i>Default IP Range
+                                </label>
+                                <input type="text" class="form-control" id="ip_range" name="ip_range" 
+                                       value="{{ ip_range }}" placeholder="10.77.158.0/24">
+                                <small class="form-text">Default network range for camera scanning</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="port" class="form-label">
+                                    <i class="fas fa-plug me-2"></i>Default RTSP Port
+                                </label>
+                                <input type="number" class="form-control" id="port" name="port" 
+                                       value="{{ port }}" min="1" max="65535">
+                                <small class="form-text">Standard RTSP port (usually 554)</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="default_username" class="form-label">
+                                    <i class="fas fa-user me-2"></i>Default Camera Username
+                                </label>
+                                <input type="text" class="form-control" id="default_username" name="default_username" 
+                                       value="{{ default_username }}">
+                                <small class="form-text">Default username for camera authentication</small>
+                            </div>
+
+                            <div class="mb-0">
+                                <label for="default_password" class="form-label">
+                                    <i class="fas fa-lock me-2"></i>Default Camera Password
+                                </label>
+                                <input type="password" class="form-control" id="default_password" name="default_password" 
+                                       placeholder="Enter default camera password">
+                                <small class="form-text">Default password for camera authentication</small>
+                            </div>
+                        </div>
+
+                        <!-- Security Settings -->
+                        <div class="glass-card">
+                            <h4>
+                                <i class="fas fa-shield-alt me-2"></i>
+                                Security Settings
+                            </h4>
+
+                            <div class="warning-box">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Changes to security settings require application restart.
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="session_timeout" class="form-label">
+                                    <i class="fas fa-clock me-2"></i>Session Timeout (minutes)
+                                </label>
+                                <input type="number" class="form-control" id="session_timeout" name="session_timeout" 
+                                       value="120" min="15" max="1440">
+                                <small class="form-text">Auto logout after inactivity</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="max_login_attempts" class="form-label">
+                                    <i class="fas fa-ban me-2"></i>Max Login Attempts
+                                </label>
+                                <input type="number" class="form-control" id="max_login_attempts" name="max_login_attempts" 
+                                       value="5" min="3" max="10">
+                                <small class="form-text">Lock account after failed attempts</small>
+                            </div>
+
+                            <div class="mb-0 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <label class="form-label mb-1">
+                                        <i class="fas fa-bug me-2"></i>Debug Mode
+                                    </label>
+                                    <small class="form-text d-block">Enable detailed logging</small>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" name="debug" {% if debug %}checked{% endif %}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Application Settings -->
+                    <div class="col-lg-6">
+                        <div class="glass-card">
+                            <h4>
+                                <i class="fas fa-server me-2"></i>
+                                Application Settings
+                            </h4>
+
+                            <div class="mb-4">
+                                <label for="app_host" class="form-label">
+                                    <i class="fas fa-hdd me-2"></i>Server Host
+                                </label>
+                                <input type="text" class="form-control" id="app_host" name="app_host" 
+                                       value="{{ app_host }}">
+                                <small class="form-text">Server bind address (0.0.0.0 for all interfaces)</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="app_port" class="form-label">
+                                    <i class="fas fa-ethernet me-2"></i>Server Port
+                                </label>
+                                <input type="number" class="form-control" id="app_port" name="app_port" 
+                                       value="{{ app_port }}" min="1024" max="65535">
+                                <small class="form-text">Port for web interface (default: 5000)</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="max_cameras" class="form-label">
+                                    <i class="fas fa-video me-2"></i>Max Cameras Per Page
+                                </label>
+                                <input type="number" class="form-control" id="max_cameras" name="max_cameras" 
+                                       value="50" min="10" max="200">
+                                <small class="form-text">Number of cameras to display per page</small>
+                            </div>
+
+                            <div class="mb-0">
+                                <label for="video_quality" class="form-label">
+                                    <i class="fas fa-film me-2"></i>Video Stream Quality
+                                </label>
+                                <select class="form-select" id="video_quality" name="video_quality">
+                                    <option value="low">Low (faster loading)</option>
+                                    <option value="medium" selected>Medium (balanced)</option>
+                                    <option value="high">High (best quality)</option>
+                                </select>
+                                <small class="form-text">Affects video streaming quality and bandwidth</small>
+                            </div>
+                        </div>
+
+                        <!-- Notification Settings -->
+                        <div class="glass-card">
+                            <h4>
+                                <i class="fas fa-bell me-2"></i>
+                                Notification Settings
+                            </h4>
+
+                            <div class="mb-4 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <label class="form-label mb-1">
+                                        <i class="fas fa-envelope me-2"></i>Email Notifications
+                                    </label>
+                                    <small class="form-text d-block">Send email alerts</small>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" name="email_notifications">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="mb-4 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <label class="form-label mb-1">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Motion Alerts
+                                    </label>
+                                    <small class="form-text d-block">Notify on motion detection</small>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" name="motion_alerts" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="mb-0 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <label class="form-label mb-1">
+                                        <i class="fas fa-wifi me-2"></i>Offline Camera Alerts
+                                    </label>
+                                    <small class="form-text d-block">Notify when camera goes offline</small>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" name="offline_alerts" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- System Information -->
+                        <div class="glass-card">
+                            <h4>
+                                <i class="fas fa-info-circle me-2"></i>
+                                System Information
+                            </h4>
+
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Version</label>
+                                    <div class="text-white">2.0.0</div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Python Version</label>
+                                    <div class="text-white">{{ python_version }}</div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Database</label>
+                                    <div class="text-white">SQLite</div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Status</label>
+                                    <span class="badge bg-success">Running</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="row mt-4">
+                    <div class="col-12 text-center">
+                        <button type="submit" class="save-btn me-3">
+                            <i class="fas fa-save me-2"></i>Save Settings
+                        </button>
+                        <button type="reset" class="reset-btn">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Danger Zone -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="glass-card" style="border: 2px solid rgba(239, 68, 68, 0.5);">
+                        <h4 style="color: #ef4444;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Danger Zone
+                        </h4>
+                        
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-radiation me-2"></i>
+                            <strong>Warning!</strong> The actions in this section are irreversible and will permanently delete data.
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center p-3" style="background: rgba(239, 68, 68, 0.1); border-radius: 0.5rem;">
+                            <div>
+                                <h5 class="mb-1" style="color: white;">
+                                    <i class="fas fa-database me-2"></i>Clean Database
+                                </h5>
+                                <p class="mb-0 text-white-50">
+                                    Permanently delete ALL data including cameras, events, logs, and groups. Admin user will be preserved.
+                                </p>
+                            </div>
+                            <button type="button" class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#cleanDatabaseModal">
+                                <i class="fas fa-trash-alt me-2"></i>Clean Database
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clean Database Confirmation Modal -->
+    <div class="modal fade" id="cleanDatabaseModal" tabindex="-1" aria-labelledby="cleanDatabaseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: rgba(0,0,0,0.95); border: 2px solid #ef4444;">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title text-danger" id="cleanDatabaseModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Database Cleanup
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger mb-3">
+                        <i class="fas fa-radiation me-2"></i>
+                        <strong>This action cannot be undone!</strong>
+                    </div>
+                    <p class="text-white mb-3">This will permanently delete:</p>
+                    <ul class="text-white-50 mb-3">
+                        <li><i class="fas fa-video me-2"></i>All cameras and their configurations</li>
+                        <li><i class="fas fa-layer-group me-2"></i>All camera groups</li>
+                        <li><i class="fas fa-bell me-2"></i>All events and alerts</li>
+                        <li><i class="fas fa-clipboard-list me-2"></i>All audit logs</li>
+                    </ul>
+                    <p class="text-white mb-3"><i class="fas fa-shield-alt me-2 text-success"></i>Admin user account will be preserved.</p>
+                    <div class="mb-3">
+                        <label for="confirmText" class="form-label text-white">
+                            Type <strong class="text-danger">DELETE ALL DATA</strong> to confirm:
+                        </label>
+                        <input type="text" class="form-control" id="confirmText" placeholder="DELETE ALL DATA">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmCleanBtn" disabled>
+                        <i class="fas fa-trash-alt me-2"></i>Delete All Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle clean database confirmation
+        document.getElementById('confirmText').addEventListener('input', function(e) {
+            const btn = document.getElementById('confirmCleanBtn');
+            if (e.target.value === 'DELETE ALL DATA') {
+                btn.disabled = false;
+            } else {
+                btn.disabled = true;
+            }
+        });
+
+        document.getElementById('confirmCleanBtn').addEventListener('click', function() {
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            // Show loading state
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cleaning...';
+            
+            // Send request
+            fetch('/clean_database', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal and show success
+                    bootstrap.Modal.getInstance(document.getElementById('cleanDatabaseModal')).hide();
+                    alert('Database cleaned successfully! The page will reload.');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Delete All Data';
+                }
+            })
+            .catch(error => {
+                alert('Error cleaning database: ' + error);
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Delete All Data';
+            });
+        });
+    </script>
+</body>
+</html>
