@@ -1,0 +1,164 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask
+instance/
+.webassets-cache
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+instance/cameras.db
+instance/*.db
+
+# Secret Keys & Encryption
+instance/secret.key
+instance/encryption.key
+*.key
+!.gitkeep
+
+# Logs
+*.log
+logs/
+camera_dashboard.log
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+test_results.json
+scan_analysis_report.json
+.cache/
+
+# Documentation (auto-generated)
+*_SUMMARY.md
+*_REPORT.md
+*_COMPLETE.md
+*_CHECKLIST.md
+FIXES_*.md
+LOGIN_FIX_*.md
+COMPREHENSIVE_*.md
+CLEANUP_*.md
+DATABASE_CLEANUP_*.md
+FRONTEND_ANALYSIS_*.md
+REHOSTING_*.md
+DEPLOYMENT_*.md
+AUTO_SCAN_*.md
+CRITICAL_FIXES_*.md
+IMPLEMENTATION_*.md
+SECURITY_*.md
+UI_*.md
+STATUS_CHECK.md
+ENHANCEMENTS.md
+QUICKSTART.md
+
+# Utility/Test Scripts (optional)
+comprehensive_audit.py
+comprehensive_test.py
+fix_camera_credentials.py
+reset_admin.py
+scan_analysis.py
+
+# OS Specific
+Thumbs.db
+.DS_Store
+desktop.ini
+._*
+
+# Backup Files
+*.bak
+*.backup
+*.tmp
+*.old
+*~
+
+# Application Specific
+static/uploads/
+static/recordings/
+media/
+recordings/
+snapshots/
+uploads/
+backups/
+
+# Docker
+docker-compose.override.yml
+
+# Certificates & Security
+*.pem
+*.crt
+*.cer
+*.p12
+*.pfx
+secrets/
+
+# Node.js (if using frontend tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Production Files
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary Files
+temp/
+tmp/
+*.tmp
