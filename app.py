@@ -53,8 +53,19 @@ def get_or_create_secret_key():
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', get_or_create_secret_key())
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///cameras.db')
+
+# PostgreSQL Configuration
+# Format: postgresql://user:password@host:port/database
+# Default to PostgreSQL in production, SQLite for development fallback
+default_db_uri = os.getenv('DATABASE_URL', os.getenv('SQLALCHEMY_DATABASE_URI', 'postgresql://camguid:camguid_password@db:5432/camguid'))
+app.config['SQLALCHEMY_DATABASE_URI'] = default_db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 10,
+    'pool_recycle': 3600,
+    'pool_pre_ping': True,
+    'max_overflow': 20
+}
 app.config['WTF_CSRF_ENABLED'] = os.getenv('WTF_CSRF_ENABLED', 'True').lower() == 'true'
 app.config['WTF_CSRF_TIME_LIMIT'] = int(os.getenv('WTF_CSRF_TIME_LIMIT', 3600))
 
@@ -87,14 +98,27 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 # Configure logging
+import logging
+from logging.handlers import RotatingFileHandler
+
 log_level = os.getenv('LOG_LEVEL', 'WARNING').upper()
 numeric_level = getattr(logging, log_level, logging.WARNING)
+
+# Create rotating file handler (max 10MB per file, keep 5 backup files)
+log_file = os.getenv('LOG_FILE', 'camera_dashboard.log')
+rotating_handler = RotatingFileHandler(
+    log_file,
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5
+)
+rotating_handler.setLevel(numeric_level)
+rotating_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 
 logging.basicConfig(
     level=numeric_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.getenv('LOG_FILE', 'camera_dashboard.log')),
+        rotating_handler,
         logging.StreamHandler()
     ]
 )
@@ -851,6 +875,59 @@ def get_discovered_devices():
         logger.error(f'Error getting discovered devices: {e}')
         return jsonify({'error': str(e)}), 500
 
+from flask_swagger_ui import get_swaggerui_blueprint
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
+
+# Swagger UI setup
+SWAGGER_URL = '/api/docs'
+API_URL = '/static/swagger.json'
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={
+        'app_name': "Camera Dashboard API"
+    }
+)
+app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+REQUEST_COUNT = Counter('flask_requests_total', 'Total number of requests', ['method', 'endpoint', 'status'])
+REQUEST_LATENCY = Histogram('flask_request_duration_seconds', 'Request duration in seconds', ['method', 'endpoint'])
+CAMERA_COUNT = Gauge('camera_total', 'Total number of cameras')
+CAMERA_ONLINE_COUNT = Gauge('camera_online_total', 'Number of online cameras')
+CAMERA_OFFLINE_COUNT = Gauge('camera_offline_total', 'Number of offline cameras')
+DB_CONNECTION_COUNT = Gauge('db_connections_active', 'Number of active database connections')
+
+@app.before_request
+def before_request():
+    """Track request start time for latency measurement"""
+    request.start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    """Track request metrics after completion"""
+    try:
+        # Calculate request duration
+        duration = time.time() - getattr(request, 'start_time', time.time())
+        
+        # Get endpoint name (simplified)
+        endpoint = request.endpoint or 'unknown'
+        
+        # Update metrics
+        REQUEST_COUNT.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status=str(response.status_code)
+        ).inc()
+        
+        REQUEST_LATENCY.labels(
+            method=request.method,
+            endpoint=endpoint
+        ).observe(duration)
+        
+    except Exception as e:
+        logger.debug(f'Failed to update request metrics: {e}')
+    
+    return response
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for monitoring"""
@@ -870,6 +947,27 @@ def health_check():
             'error': str(e),
             'timestamp': time.time()
         }), 500
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    """Prometheus metrics endpoint"""
+    try:
+        # Update camera metrics
+        total_cameras = Camera.query.count()
+        online_cameras = Camera.query.filter_by(status='online').count()
+        offline_cameras = Camera.query.filter_by(status='offline').count()
+        
+        CAMERA_COUNT.set(total_cameras)
+        CAMERA_ONLINE_COUNT.set(online_cameras)
+        CAMERA_OFFLINE_COUNT.set(offline_cameras)
+        
+        # Update database connection metrics (simplified)
+        DB_CONNECTION_COUNT.set(1)  # In a real app, you'd track actual connection pool
+        
+        return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+    except Exception as e:
+        logger.error(f'Metrics collection failed: {e}')
+        return 'Metrics collection failed', 500
 
 @app.route('/camera/<int:camera_id>')
 @login_required
@@ -2128,6 +2226,57 @@ def internal_error(error):
         return jsonify({'error': 'Internal server error'}), 500
     flash('An internal error occurred', 'error')
     return redirect(url_for('dashboard'))
+
+def create_app(config_overrides=None):
+    """Factory function to create Flask app for testing"""
+    test_app = Flask(__name__)
+    
+    # Apply config overrides
+    if config_overrides:
+        test_app.config.update(config_overrides)
+    else:
+        # Use default config
+        test_app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', get_or_create_secret_key())
+        test_app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', os.getenv('SQLALCHEMY_DATABASE_URI', 'postgresql://camguid:camguid_password@db:5432/camguid'))
+        test_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        test_app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_size': 10,
+            'pool_recycle': 3600,
+            'pool_pre_ping': True,
+            'max_overflow': 20
+        }
+        test_app.config['WTF_CSRF_ENABLED'] = os.getenv('WTF_CSRF_ENABLED', 'True').lower() == 'true'
+        test_app.config['WTF_CSRF_TIME_LIMIT'] = int(os.getenv('WTF_CSRF_TIME_LIMIT', 3600))
+        test_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=int(os.getenv('PERMANENT_SESSION_LIFETIME', 7200)))
+        test_app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+        test_app.config['SESSION_COOKIE_HTTPONLY'] = os.getenv('SESSION_COOKIE_HTTPONLY', 'True').lower() == 'true'
+        test_app.config['SESSION_COOKIE_SAMESITE'] = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
+        test_app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+    
+    # Set default database URI if not provided
+    if 'SQLALCHEMY_DATABASE_URI' not in test_app.config:
+        test_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    
+    # Initialize extensions
+    db.init_app(test_app)
+    csrf.init_app(test_app)
+    login_manager.init_app(test_app)
+    migrate.init_app(test_app, db)
+    
+    # Register blueprints and routes (simplified for testing)
+    test_app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+    
+    # Add all the routes from the main app
+    # This is a simplified version - in practice you'd want to organize this better
+    test_app.add_url_rule('/', 'dashboard', dashboard, methods=['GET'])
+    test_app.add_url_rule('/login', 'login', login, methods=['GET', 'POST'])
+    test_app.add_url_rule('/health', 'health_check', health_check, methods=['GET'])
+    test_app.add_url_rule('/metrics', 'metrics', metrics, methods=['GET'])
+    test_app.add_url_rule('/api/cameras', 'api_cameras', api_cameras, methods=['GET'])
+    test_app.add_url_rule('/api/statistics', 'get_statistics', get_statistics, methods=['GET'])
+    test_app.add_url_rule('/settings', 'settings', settings, methods=['GET'])
+    
+    return test_app
 
 if __name__ == '__main__':
     with app.app_context():
