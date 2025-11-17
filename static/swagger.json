@@ -1,0 +1,260 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Camera Dashboard API",
+    "description": "REST API for Camera Dashboard application",
+    "version": "1.0.0"
+  },
+  "host": "localhost:5000",
+  "basePath": "/",
+  "schemes": ["http", "https"],
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "description": "Check the health status of the application",
+        "responses": {
+          "200": {
+            "description": "Application is healthy",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "database": {"type": "string"},
+                "cameras": {"type": "integer"},
+                "timestamp": {"type": "number"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus metrics",
+        "description": "Get application metrics in Prometheus format",
+        "responses": {
+          "200": {
+            "description": "Metrics data",
+            "content": {
+              "text/plain": {
+                "schema": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cameras": {
+      "get": {
+        "summary": "Get cameras list",
+        "description": "Retrieve a paginated list of cameras",
+        "parameters": [
+          {"name": "page", "in": "query", "type": "integer", "default": 1},
+          {"name": "per_page", "in": "query", "type": "integer", "default": 50},
+          {"name": "location", "in": "query", "type": "string"},
+          {"name": "search", "in": "query", "type": "string"},
+          {"name": "status", "in": "query", "type": "string"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Cameras list",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "cameras": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "name": {"type": "string"},
+                      "ip": {"type": "string"},
+                      "location": {"type": "string"},
+                      "status": {"type": "string"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "per_page": {"type": "integer"},
+                    "total": {"type": "integer"},
+                    "pages": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add new camera",
+        "description": "Add a new camera to the system",
+        "parameters": [
+          {
+            "name": "camera",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "ip": {"type": "string"},
+                "port": {"type": "integer"},
+                "username": {"type": "string"},
+                "password": {"type": "string"},
+                "location": {"type": "string"}
+              },
+              "required": ["name", "ip"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Camera created successfully"
+          }
+        }
+      }
+    },
+    "/api/cameras/{camera_id}": {
+      "get": {
+        "summary": "Get camera details",
+        "description": "Get details of a specific camera",
+        "parameters": [
+          {"name": "camera_id", "in": "path", "required": true, "type": "integer"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Camera details",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "integer"},
+                "name": {"type": "string"},
+                "ip": {"type": "string"},
+                "location": {"type": "string"},
+                "status": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update camera",
+        "description": "Update camera details",
+        "parameters": [
+          {"name": "camera_id", "in": "path", "required": true, "type": "integer"},
+          {
+            "name": "camera",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "location": {"type": "string"},
+                "status": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Camera updated successfully"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete camera",
+        "description": "Delete a camera from the system",
+        "parameters": [
+          {"name": "camera_id", "in": "path", "required": true, "type": "integer"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Camera deleted successfully"
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "summary": "Get events",
+        "description": "Retrieve system events",
+        "parameters": [
+          {"name": "page", "in": "query", "type": "integer", "default": 1},
+          {"name": "per_page", "in": "query", "type": "integer", "default": 50},
+          {"name": "type", "in": "query", "type": "string"},
+          {"name": "severity", "in": "query", "type": "string"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Events list"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create event",
+        "description": "Create a new system event",
+        "parameters": [
+          {
+            "name": "event",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "camera_id": {"type": "integer"},
+                "event_type": {"type": "string"},
+                "severity": {"type": "string"},
+                "description": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Event created successfully"
+          }
+        }
+      }
+    },
+    "/api/statistics": {
+      "get": {
+        "summary": "Get statistics",
+        "description": "Get dashboard statistics",
+        "responses": {
+          "200": {
+            "description": "Statistics data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "total": {"type": "integer"},
+                "online": {"type": "integer"},
+                "offline": {"type": "integer"},
+                "locations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "location": {"type": "string"},
+                      "count": {"type": "integer"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
