@@ -1,25 +1,65 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: camguid-postgres-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-camguid}
+      POSTGRES_USER: ${POSTGRES_USER:-camguid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-camguid_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - camera-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-camguid}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
   camera-dashboard:
     image: ${DOCKERHUB_USERNAME:-your-dockerhub-username}/campy:latest
-    container_name: camera-dashboard-prod
+    container_name: camguid-app-prod
     ports:
       - "5000:5000"
     volumes:
-      - camera-data:/app/instance
       - ./static:/app/static:ro
       - ./logs:/app/logs
     environment:
       - FLASK_ENV=production
       - DEBUG=False
       - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-camguid}:${POSTGRES_PASSWORD:-camguid_password}@db:5432/${POSTGRES_DB:-camguid}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-camguid}
+      - POSTGRES_USER=${POSTGRES_USER:-camguid}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-camguid_password}
       - IP_RANGE=${IP_RANGE:-10.77.158.0/24}
       - PORT=${PORT:-554}
       - DEFAULT_USERNAME=${DEFAULT_USERNAME:-admin}
       - DEFAULT_PASSWORD=${DEFAULT_PASSWORD}
       - APP_HOST=0.0.0.0
       - APP_PORT=5000
+    depends_on:
+      db:
+        condition: service_healthy
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -37,8 +77,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
+          cpus: '1.5'
+          memory: 1.5G
         reservations:
           cpus: '0.5'
           memory: 512M
@@ -46,7 +86,7 @@ services:
   # Nginx reverse proxy for production
   nginx:
     image: nginx:alpine
-    container_name: camera-nginx-prod
+    container_name: camguid-nginx-prod
     ports:
       - "80:80"
       - "443:443"
@@ -64,9 +104,17 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
 volumes:
-  camera-data:
+  postgres-data:
     driver: local
 
 networks:

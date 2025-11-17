@@ -2,23 +2,37 @@ FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
+# Install PostgreSQL client and dependencies
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    postgresql-client \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Create static directory if it doesn't exist
-RUN mkdir -p static
+# Make entrypoint script executable
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
-# Create instance directory for database
-RUN mkdir -p instance
+# Create necessary directories
+RUN mkdir -p static logs instance
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
+    && chown -R app:app /app \
+    && chown app:app /docker-entrypoint.sh
+
 USER app
 
 EXPOSE 5000
 
-# Use Gunicorn for production WSGI server
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "--timeout", "30", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
+# Use custom entrypoint for database initialization
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# Use Gunicorn for production WSGI server with PostgreSQL optimized settings
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "--timeout", "60", "--worker-class", "sync", "--worker-connections", "1000", "--max-requests", "1000", "--max-requests-jitter", "100", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info", "app:app"]

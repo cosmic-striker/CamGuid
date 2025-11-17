@@ -1,17 +1,48 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: camguid-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-camguid}
+      POSTGRES_USER: ${POSTGRES_USER:-camguid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-camguid_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - camera-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-camguid}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   camera-dashboard:
     build: .
     image: ${DOCKERHUB_USERNAME:-your-dockerhub-username}/campy:latest
+    container_name: camguid-app
     ports:
       - "5000:5000"
     volumes:
-      - ./instance:/app/instance
+      - ./logs:/app/logs
       - ./.env:/app/.env
     environment:
-      - FLASK_ENV=production
+      - FLASK_ENV=development
       - DEBUG=False
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-camguid}:${POSTGRES_PASSWORD:-camguid_password}@db:5432/${POSTGRES_DB:-camguid}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-camguid}
+      - POSTGRES_USER=${POSTGRES_USER:-camguid}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-camguid_password}
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -23,7 +54,7 @@ services:
       - camera-network
 
 volumes:
-  camera-data:
+  postgres-data:
     driver: local
 
 networks:
