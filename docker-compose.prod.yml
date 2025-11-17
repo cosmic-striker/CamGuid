@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  camera-dashboard:
+    image: ${DOCKERHUB_USERNAME:-your-dockerhub-username}/campy:latest
+    container_name: camera-dashboard-prod
+    ports:
+      - "5000:5000"
+    volumes:
+      - camera-data:/app/instance
+      - ./static:/app/static:ro
+      - ./logs:/app/logs
+    environment:
+      - FLASK_ENV=production
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY}
+      - IP_RANGE=${IP_RANGE:-10.77.158.0/24}
+      - PORT=${PORT:-554}
+      - DEFAULT_USERNAME=${DEFAULT_USERNAME:-admin}
+      - DEFAULT_PASSWORD=${DEFAULT_PASSWORD}
+      - APP_HOST=0.0.0.0
+      - APP_PORT=5000
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - camera-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Nginx reverse proxy for production
+  nginx:
+    image: nginx:alpine
+    container_name: camera-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./static:/var/www/static:ro
+    depends_on:
+      - camera-dashboard
+    networks:
+      - camera-network
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  camera-data:
+    driver: local
+
+networks:
+  camera-network:
+    driver: bridge
