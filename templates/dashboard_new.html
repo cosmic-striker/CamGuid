@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Dashboard - Smart Surveillance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --dark-bg: #1a1d20;
+            --darker-bg: #0f1214;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker-bg) 0%, var(--dark-bg) 100%);
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            background: var(--primary-gradient);
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 1rem 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .action-card:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(10px);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .camera-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .camera-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .camera-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .camera-info {
+            padding: 1rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        .status-online { background: #10b981; box-shadow: 0 0 10px #10b981; }
+        .status-offline { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pulse { animation: pulse 2s infinite; }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.1);
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            width: 250px;
+        }
+
+        .sidebar .nav-link {
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar .nav-link.active {
+            color: white;
+            background: var(--primary-gradient);
+        }
+
+        .sidebar-heading {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .main-content-with-sidebar {
+            margin-left: 250px;
+            padding-top: 56px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+            .main-content-with-sidebar {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/navbar.html' %}
+    {% include 'partials/sidebar.html' %}
+
+    <div class="main-content-with-sidebar">
+        <div class="dashboard-header">
+            <div class="container-fluid">
+                <h1 class="text-center text-white mb-0">
+                    <i class="fas fa-th-large me-3"></i>
+                    Dashboard Overview
+                </h1>
+                <p class="text-center text-white-50 mb-0 mt-2">Monitor and manage your surveillance system</p>
+            </div>
+        </div>
+
+        <div class="container-fluid pb-5">
+        <!-- Statistics Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--primary-gradient);">
+                        <i class="fas fa-video text-white"></i>
+                    </div>
+                    <div class="stat-value">{{ total_cameras }}</div>
+                    <div class="stat-label">Total Cameras</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--success-gradient);">
+                        <i class="fas fa-check-circle text-white"></i>
+                    </div>
+                    <div class="stat-value text-success">{{ online_cameras }}</div>
+                    <div class="stat-label">Online</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--danger-gradient);">
+                        <i class="fas fa-exclamation-triangle text-white"></i>
+                    </div>
+                    <div class="stat-value text-danger">{{ offline_cameras }}</div>
+                    <div class="stat-label">Offline</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <h3 class="text-white mb-3">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h3>
+            </div>
+            <div class="col-md-3">
+                <a href="/live-view" class="action-card">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon me-3" style="background: var(--primary-gradient); width: 60px; height: 60px; font-size: 1.5rem;">
+                            <i class="fas fa-eye text-white"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1">Live View</h5>
+                            <small class="text-white-50">Watch all cameras</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/camera" class="action-card">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon me-3" style="background: var(--success-gradient); width: 60px; height: 60px; font-size: 1.5rem;">
+                            <i class="fas fa-search text-white"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1">Network Scan</h5>
+                            <small class="text-white-50">Discover cameras</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/devices" class="action-card">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon me-3" style="background: var(--warning-gradient); width: 60px; height: 60px; font-size: 1.5rem;">
+                            <i class="fas fa-cog text-white"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1">Manage Devices</h5>
+                            <small class="text-white-50">Configure cameras</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/events" class="action-card">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon me-3" style="background: var(--danger-gradient); width: 60px; height: 60px; font-size: 1.5rem;">
+                            <i class="fas fa-bell text-white"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1">Events</h5>
+                            <small class="text-white-50">View alerts</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Cameras -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="text-white mb-3">
+                    <i class="fas fa-history me-2"></i>Recent Cameras
+                </h3>
+            </div>
+        </div>
+
+        {% if recent_cameras %}
+        <div class="camera-grid">
+            {% for camera in recent_cameras %}
+            <div class="camera-card">
+                <div class="camera-thumbnail">
+                    <i class="fas fa-video fa-3x text-white-50"></i>
+                    <div style="position: absolute; top: 10px; left: 10px;">
+                        <span class="status-dot {{ 'status-online' if camera.status == 'online' else 'status-offline' }} {{ 'pulse' if camera.status == 'online' else '' }}"></span>
+                    </div>
+                </div>
+                <div class="camera-info">
+                    <h5 class="text-white mb-2">{{ camera.name }}</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-white-50"><i class="fas fa-network-wired me-2"></i>{{ camera.ip }}</span>
+                        <span class="badge {{ 'bg-success' if camera.status == 'online' else 'bg-danger' }}">
+                            {{ camera.status }}
+                        </span>
+                    </div>
+                    <div class="text-white-50 mb-3">
+                        <i class="fas fa-map-marker-alt me-2"></i>{{ camera.location }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="/camera/{{ camera.id }}" class="btn btn-sm btn-outline-light flex-fill">
+                            <i class="fas fa-eye me-1"></i>View
+                        </a>
+                        <a href="/configure_camera/{{ camera.id }}" class="btn btn-sm btn-outline-primary flex-fill">
+                            <i class="fas fa-cog me-1"></i>Config
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-video-slash fa-4x text-white-50 mb-3"></i>
+            <h4 class="text-white-50">No cameras found</h4>
+            <p class="text-white-50 mb-4">Start by scanning your network to discover cameras</p>
+            <a href="/camera" class="btn btn-primary btn-lg">
+                <i class="fas fa-search me-2"></i>Start Network Scan
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Locations Overview -->
+        {% if locations %}
+        <div class="row mt-5">
+            <div class="col-12">
+                <h3 class="text-white mb-3">
+                    <i class="fas fa-map-marked-alt me-2"></i>Camera Locations
+                </h3>
+            </div>
+            {% for location, count in locations %}
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50 mb-1">{{ location }}</h6>
+                            <div class="stat-value" style="font-size: 2rem;">{{ count }}</div>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(102, 126, 234, 0.2); width: 50px; height: 50px; font-size: 1.5rem;">
+                            <i class="fas fa-map-marker-alt" style="color: #667eea;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto refresh statistics every 30 seconds
+        setInterval(() => {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>
