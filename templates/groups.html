@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Groups - Smart Surveillance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f1214 0%, #1a1d20 50%, #2d1b4e 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: rgba(15, 18, 20, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0.875rem 1.5rem;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .group-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            height: 100%;
+        }
+
+        .group-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .group-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .camera-tag {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #a5b4fc;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.813rem;
+            margin: 0.25rem;
+        }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .modal-content {
+            background: #1a1d21;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+            color: white;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .camera-checkbox {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .camera-checkbox:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+        }
+
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/sidebar_modern.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="text-white mb-1">
+                    <i class="fas fa-layer-group me-2"></i>Camera Groups
+                </h2>
+                <p class="text-white-50 mb-0">Organize cameras by location, function, or custom groups</p>
+            </div>
+            <div>
+                <button class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+                    <i class="fas fa-plus me-2"></i>Create Group
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Total Groups</p>
+                            <h3 class="text-white mb-0" id="totalGroups">0</h3>
+                        </div>
+                        <i class="fas fa-layer-group text-white-50" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Total Cameras</p>
+                            <h3 class="text-white mb-0" id="totalCameras">0</h3>
+                        </div>
+                        <i class="fas fa-camera text-white-50" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Ungrouped</p>
+                            <h3 class="text-warning mb-0" id="ungroupedCameras">0</h3>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Locations</p>
+                            <h3 class="text-info mb-0" id="totalLocations">0</h3>
+                        </div>
+                        <i class="fas fa-map-marker-alt text-info" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groups Grid -->
+        <div class="row g-4" id="groupsGrid">
+            <!-- Groups will be loaded dynamically -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="glass-card p-5 text-center d-none" id="emptyState">
+            <i class="fas fa-layer-group text-white-50 mb-3" style="font-size: 4rem;"></i>
+            <h4 class="text-white mb-2">No Groups Created</h4>
+            <p class="text-white-50 mb-4">Start organizing your cameras by creating groups</p>
+            <button class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+                <i class="fas fa-plus me-2"></i>Create Your First Group
+            </button>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div class="modal fade" id="createGroupModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white">
+                        <i class="fas fa-layer-group me-2"></i>Create Camera Group
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createGroupForm">
+                        <div class="mb-3">
+                            <label class="form-label text-white">Group Name</label>
+                            <input type="text" class="form-control" id="groupName" placeholder="e.g., Parking Areas, Main Entrance" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-white">Description</label>
+                            <textarea class="form-control" id="groupDescription" rows="2" placeholder="Brief description of this group"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-white">Location/Area</label>
+                            <input type="text" class="form-control" id="groupLocation" placeholder="e.g., Building A, Floor 1">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-white">Icon</label>
+                            <select class="form-select" id="groupIcon">
+                                <option value="fa-layer-group">Default</option>
+                                <option value="fa-parking">Parking</option>
+                                <option value="fa-door-open">Entrance/Exit</option>
+                                <option value="fa-warehouse">Warehouse</option>
+                                <option value="fa-building">Building</option>
+                                <option value="fa-store">Store/Shop</option>
+                                <option value="fa-home">Home</option>
+                                <option value="fa-industry">Industrial</option>
+                                <option value="fa-hospital">Hospital</option>
+                                <option value="fa-school">School</option>
+                                <option value="fa-map-marker-alt">Location</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-white">Select Cameras</label>
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                <div class="camera-checkbox">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="1" id="cam1">
+                                        <label class="form-check-label text-white" for="cam1">
+                                            <i class="fas fa-camera me-2"></i>Camera 1 - Main Entrance
+                                            <span class="badge bg-success ms-2">Online</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="camera-checkbox">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="2" id="cam2">
+                                        <label class="form-check-label text-white" for="cam2">
+                                            <i class="fas fa-camera me-2"></i>Camera 2 - Parking Lot
+                                            <span class="badge bg-success ms-2">Online</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="camera-checkbox">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="3" id="cam3">
+                                        <label class="form-check-label text-white" for="cam3">
+                                            <i class="fas fa-camera me-2"></i>Camera 3 - Warehouse
+                                            <span class="badge bg-danger ms-2">Offline</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-gradient" onclick="createGroup()">
+                        <i class="fas fa-plus me-2"></i>Create Group
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function loadGroups() {
+            // Load groups from API
+            fetch('/api/camera_groups')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update statistics
+                        document.getElementById('totalGroups').textContent = data.total_groups || 0;
+                        document.getElementById('totalCameras').textContent = data.total_cameras || 0;
+                        document.getElementById('ungroupedCameras').textContent = data.ungrouped || 0;
+                        document.getElementById('totalLocations').textContent = data.locations || 0;
+
+                        // Render groups
+                        renderGroups(data.groups);
+
+                        // Show empty state if no groups
+                        const emptyState = document.getElementById('emptyState');
+                        if (data.groups.length === 0) {
+                            emptyState.classList.remove('d-none');
+                        } else {
+                            emptyState.classList.add('d-none');
+                        }
+                    }
+                })
+                .catch(error => console.error('Error loading groups:', error));
+        }
+
+        function renderGroups(groups) {
+            const grid = document.getElementById('groupsGrid');
+            grid.innerHTML = '';
+
+            const iconColors = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+            ];
+
+            groups.forEach((group, index) => {
+                const colorIndex = index % iconColors.length;
+                const groupHtml = `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="group-card" onclick="viewGroup(${group.id})">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="group-icon" style="background: ${iconColors[colorIndex]};">
+                                    <i class="fas ${group.icon}"></i>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="dropdown" onclick="event.stopPropagation()">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark">
+                                        <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); editGroup(${group.id})"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="event.stopPropagation(); deleteGroup(${group.id})"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <h5 class="text-white mb-2">${group.name}</h5>
+                            <p class="text-white-50 small mb-3">${group.description || 'No description'}</p>
+
+                            <div class="mb-3">
+                                <span class="badge bg-primary me-2">
+                                    <i class="fas fa-camera me-1"></i>${group.camera_count} Cameras
+                                </span>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle me-1"></i>${group.online_count} Online
+                                </span>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-1">
+                                ${group.cameras.slice(0, 3).map(cam => `<span class="camera-tag">${cam.name}</span>`).join('')}
+                                ${group.cameras.length > 3 ? `<span class="text-white-50 small">+${group.cameras.length - 3} more</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += groupHtml;
+            });
+        }
+
+        function createGroup() {
+            const groupData = {
+                name: document.getElementById('groupName').value,
+                description: document.getElementById('groupDescription').value,
+                location: document.getElementById('groupLocation').value,
+                icon: document.getElementById('groupIcon').value,
+                cameras: Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value)
+            };
+
+            fetch('/api/camera_groups', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(groupData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('createGroupModal')).hide();
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to create group');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating group');
+            });
+        }
+
+        function viewGroup(groupId) {
+            window.location.href = `/groups/${groupId}`;
+        }
+
+        function editGroup(groupId) {
+            alert('Edit group functionality coming soon for group: ' + groupId);
+        }
+
+        function deleteGroup(groupId) {
+            if (confirm('Are you sure you want to delete this group?')) {
+                fetch(`/api/camera_groups/${groupId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadGroups(); // Reload the groups
+                    } else {
+                        alert(data.message || 'Failed to delete group');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting group');
+                });
+            }
+        }
+
+        // Load data on page load
+        loadGroups();
+    </script>
+</body>
+</html>

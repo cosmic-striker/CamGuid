@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ group.name }} - Smart Surveillance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f1214 0%, #1a1d20 50%, #2d1b4e 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: rgba(15, 18, 20, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0.875rem 1.5rem;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .group-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .camera-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            height: 100%;
+        }
+
+        .camera-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: rgba(34, 197, 94, 0.9);
+            color: white;
+        }
+
+        .status-offline {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .video-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/sidebar_modern.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Group Header -->
+        <div class="group-header">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex align-items-center">
+                    <div style="font-size: 3rem; margin-right: 1rem;">
+                        <i class="fas {{ group.icon }}"></i>
+                    </div>
+                    <div>
+                        <h1 class="mb-1">{{ group.name }}</h1>
+                        {% if group.description %}
+                        <p class="mb-2 opacity-75">{{ group.description }}</p>
+                        {% endif %}
+                        {% if group.location %}
+                        <p class="mb-0 small opacity-75">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ group.location }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-light me-2" onclick="editGroup()">
+                        <i class="fas fa-edit me-1"></i>Edit Group
+                    </button>
+                    <button class="btn btn-outline-light" onclick="window.history.back()">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Groups
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Total Cameras</p>
+                            <h3 class="text-white mb-0" id="totalCameras">{{ group.cameras|length }}</h3>
+                        </div>
+                        <i class="fas fa-camera text-white-50" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Online</p>
+                            <h3 class="text-success mb-0" id="onlineCameras">
+                                {{ group.cameras|selectattr('status', 'equalto', 'online')|list|length }}
+                            </h3>
+                        </div>
+                        <i class="fas fa-circle text-success" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Offline</p>
+                            <h3 class="text-danger mb-0" id="offlineCameras">
+                                {{ group.cameras|selectattr('status', 'equalto', 'offline')|list|length }}
+                            </h3>
+                        </div>
+                        <i class="fas fa-circle text-danger" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-white-50 mb-1 small">Last Updated</p>
+                            <h6 class="text-info mb-0">{{ group.updated_at.strftime('%H:%M') }}</h6>
+                        </div>
+                        <i class="fas fa-clock text-info" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cameras Grid -->
+        <div class="row g-4">
+            {% for camera in group.cameras %}
+            <div class="col-md-6 col-lg-4">
+                <div class="camera-card" onclick="viewCamera({{ camera.id }})">
+                    <div class="position-relative">
+                        <div class="video-thumbnail">
+                            <img src="/video_feed/{{ camera.id }}" alt="{{ camera.name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="d-none w-100 h-100 align-items-center justify-content-center" style="background: rgba(0,0,0,0.5);">
+                                <i class="fas fa-video-slash text-white-50" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                        <span class="status-badge status-{{ 'online' if camera.status == 'online' else 'offline' }}">
+                            {{ camera.status.title() }}
+                        </span>
+                    </div>
+
+                    <h5 class="text-white mb-2">{{ camera.name }}</h5>
+                    <p class="text-white-50 small mb-2">
+                        <i class="fas fa-map-marker-alt me-1"></i>{{ camera.location or 'No location' }}
+                    </p>
+                    <p class="text-white-50 small mb-3">
+                        <i class="fas fa-network-wired me-1"></i>{{ camera.ip }}:{{ camera.port }}
+                    </p>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button class="btn btn-sm btn-outline-light me-1" onclick="event.stopPropagation(); openPTZ({{ camera.id }})" title="PTZ Control">
+                                <i class="fas fa-arrows-alt"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-light" onclick="event.stopPropagation(); takeSnapshot({{ camera.id }})" title="Snapshot">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        </div>
+                        <small class="text-white-50">
+                            ID: {{ camera.id }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Empty State -->
+        {% if not group.cameras %}
+        <div class="glass-card p-5 text-center">
+            <i class="fas fa-camera text-white-50 mb-3" style="font-size: 4rem;"></i>
+            <h4 class="text-white mb-2">No Cameras in This Group</h4>
+            <p class="text-white-50 mb-4">This group doesn't have any cameras assigned yet.</p>
+            <button class="btn btn-gradient" onclick="editGroup()">
+                <i class="fas fa-plus me-2"></i>Add Cameras
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewCamera(cameraId) {
+            window.location.href = `/camera/${cameraId}`;
+        }
+
+        function openPTZ(cameraId) {
+            // Open PTZ control modal or page
+            alert('PTZ control for camera ' + cameraId);
+        }
+
+        function takeSnapshot(cameraId) {
+            // Take snapshot
+            alert('Taking snapshot for camera ' + cameraId);
+        }
+
+        function editGroup() {
+            window.location.href = `/groups/${{{ group.id }}}/edit`;
+        }
+
+        // Auto-refresh camera statuses every 30 seconds
+        setInterval(() => {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>
