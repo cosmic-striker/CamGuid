@@ -178,7 +178,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-white-50 mb-1 small">Total Events</p>
-                            <h4 class="text-white mb-0">156</h4>
+                            <h4 class="text-white mb-0">{{ total_events }}</h4>
                         </div>
                         <i class="fas fa-bell text-white-50" style="font-size: 2rem;"></i>
                     </div>
@@ -189,7 +189,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-white-50 mb-1 small">Critical</p>
-                            <h4 class="text-danger mb-0">3</h4>
+                            <h4 class="text-danger mb-0">{{ critical_events }}</h4>
                         </div>
                         <i class="fas fa-exclamation-circle text-danger" style="font-size: 2rem;"></i>
                     </div>
@@ -200,7 +200,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-white-50 mb-1 small">Warnings</p>
-                            <h4 class="text-warning mb-0">12</h4>
+                            <h4 class="text-warning mb-0">{{ warning_events }}</h4>
                         </div>
                         <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
                     </div>
@@ -211,7 +211,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-white-50 mb-1 small">Info</p>
-                            <h4 class="text-info mb-0">141</h4>
+                            <h4 class="text-info mb-0">{{ info_events }}</h4>
                         </div>
                         <i class="fas fa-info-circle text-info" style="font-size: 2rem;"></i>
                     </div>
@@ -242,153 +242,56 @@
             <h5 class="text-white mb-4">Recent Events</h5>
             
             <div class="event-list" id="eventsList">
-                <!-- Critical Event -->
-                <div class="event-card event-critical mb-3" data-type="critical">
-                    <div class="d-flex gap-3">
-                        <div class="event-icon icon-critical">
-                            <i class="fas fa-exclamation-circle"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="text-white mb-0">Unauthorized Access Attempt</h6>
-                                <span class="time-badge">2 mins ago</span>
+                {% if events %}
+                    {% for event in events %}
+                        <div class="event-card event-{{ 'critical' if event.severity == 'critical' else 'warning' if event.severity == 'warning' else 'info' if event.severity == 'info' else 'success' }} mb-3" data-type="{{ event.severity }}">
+                            <div class="d-flex gap-3">
+                                <div class="event-icon icon-{{ 'critical' if event.severity == 'critical' else 'warning' if event.severity == 'warning' else 'info' if event.severity == 'info' else 'success' }}">
+                                    <i class="fas fa-{{ 'exclamation-circle' if event.severity == 'critical' else 'exclamation-triangle' if event.severity == 'warning' else 'info-circle' if event.severity == 'info' else 'check-circle' }}"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="text-white mb-0">{{ event.event_type.title() if event.event_type else 'General' }} Event</h6>
+                                        <span class="time-badge">{{ event.timestamp.strftime('%m/%d %H:%M') if event.timestamp else 'Unknown' }}</span>
+                                    </div>
+                                    <p class="text-white-50 mb-2 small">{{ event.description or 'No description available' }}</p>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <span class="badge bg-{{ 'danger' if event.severity == 'critical' else 'warning' if event.severity == 'warning' else 'info' if event.severity == 'info' else 'success' }}">{{ event.severity.title() if event.severity else 'Info' }}</span>
+                                        {% if event.camera_id %}
+                                            <span class="text-white-50 small">
+                                                <i class="fas fa-camera me-1"></i>Camera {{ event.camera_id }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-white-50 small">
+                                                <i class="fas fa-server me-1"></i>System
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-light" onclick="viewEvent({{ event.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <p class="text-white-50 mb-2 small">Multiple failed login attempts detected from IP 192.168.1.150</p>
-                            <div class="d-flex gap-2 align-items-center">
-                                <span class="badge bg-danger">Critical</span>
-                                <span class="text-white-50 small">
-                                    <i class="fas fa-camera me-1"></i>Main Entrance
-                                </span>
-                            </div>
                         </div>
-                        <div>
-                            <button class="btn btn-sm btn-outline-light">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-white-50 py-5">
+                        <i class="fas fa-info-circle me-2"></i>No events found
                     </div>
-                </div>
-
-                <!-- Warning Event -->
-                <div class="event-card event-warning mb-3" data-type="warning">
-                    <div class="d-flex gap-3">
-                        <div class="event-icon icon-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="text-white mb-0">Motion Detected</h6>
-                                <span class="time-badge">5 mins ago</span>
-                            </div>
-                            <p class="text-white-50 mb-2 small">Motion detected in restricted zone A during non-business hours</p>
-                            <div class="d-flex gap-2 align-items-center">
-                                <span class="badge bg-warning">Warning</span>
-                                <span class="text-white-50 small">
-                                    <i class="fas fa-camera me-1"></i>Warehouse Zone A
-                                </span>
-                            </div>
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-outline-light">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Info Event -->
-                <div class="event-card event-info mb-3" data-type="info">
-                    <div class="d-flex gap-3">
-                        <div class="event-icon icon-info">
-                            <i class="fas fa-info-circle"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="text-white mb-0">Camera Connected</h6>
-                                <span class="time-badge">12 mins ago</span>
-                            </div>
-                            <p class="text-white-50 mb-2 small">Camera "Parking Lot 3" successfully connected to the system</p>
-                            <div class="d-flex gap-2 align-items-center">
-                                <span class="badge bg-info">Info</span>
-                                <span class="text-white-50 small">
-                                    <i class="fas fa-camera me-1"></i>Parking Lot 3
-                                </span>
-                            </div>
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-outline-light">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Success Event -->
-                <div class="event-card event-success mb-3" data-type="success">
-                    <div class="d-flex gap-3">
-                        <div class="event-icon icon-success">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="text-white mb-0">System Backup Completed</h6>
-                                <span class="time-badge">1 hour ago</span>
-                            </div>
-                            <p class="text-white-50 mb-2 small">Automated backup of surveillance data completed successfully</p>
-                            <div class="d-flex gap-2 align-items-center">
-                                <span class="badge bg-success">Success</span>
-                                <span class="text-white-50 small">
-                                    <i class="fas fa-server me-1"></i>System
-                                </span>
-                            </div>
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-outline-light">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- More Info Events -->
-                <div class="event-card event-info mb-3" data-type="info">
-                    <div class="d-flex gap-3">
-                        <div class="event-icon icon-info">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="text-white mb-0">User Login</h6>
-                                <span class="time-badge">2 hours ago</span>
-                            </div>
-                            <p class="text-white-50 mb-2 small">Administrator logged in from 192.168.1.100</p>
-                            <div class="d-flex gap-2 align-items-center">
-                                <span class="badge bg-info">Info</span>
-                                <span class="text-white-50 small">
-                                    <i class="fas fa-desktop me-1"></i>Admin Panel
-                                </span>
-                            </div>
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-outline-light">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                {% endif %}
             </div>
 
             <!-- Pagination -->
             <div class="d-flex justify-content-between align-items-center mt-4">
-                <p class="text-white-50 mb-0 small">Showing 5 of 156 events</p>
+                <p class="text-white-50 mb-0 small">Showing {{ events|length if events else 0 }} of {{ total_events }} events</p>
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item disabled">
                             <a class="page-link" href="#"><i class="fas fa-chevron-left"></i></a>
                         </li>
                         <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
                         <li class="page-item">
                             <a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a>
                         </li>
@@ -423,6 +326,12 @@
                 const text = event.textContent.toLowerCase();
                 event.style.display = text.includes(searchTerm) ? '' : 'none';
             });
+        }
+
+        function viewEvent(eventId) {
+            // For now, just show an alert. In a real implementation, this could open a modal or redirect to event details
+            alert('Viewing event details for event ID: ' + eventId);
+            // TODO: Implement event details modal or page
         }
     </script>
 </body>

@@ -523,9 +523,14 @@
                     Discovered Devices
                     <span class="badge bg-primary ms-2" id="deviceCount">0</span>
                 </h4>
-                <button class="btn btn-outline-light" onclick="loadDiscoveredDevices()">
-                    <i class="fas fa-sync-alt me-2"></i>Refresh
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-light" onclick="loadDiscoveredDevices()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                    <button class="btn btn-success" onclick="showAddCameraModal()">
+                        <i class="fas fa-plus me-2"></i>Add Camera
+                    </button>
+                </div>
             </div>
 
             <div class="device-table table-responsive">
@@ -551,6 +556,96 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Camera Modal -->
+    <div class="modal fade" id="addCameraModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <h5 class="modal-title text-white">
+                        <i class="fas fa-plus-circle me-2"></i>Add Camera Manually
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCameraForm">
+                        <div class="mb-3">
+                            <label class="form-label text-white-50">
+                                <i class="fas fa-tag me-2"></i>Camera Name
+                            </label>
+                            <input type="text" class="form-control" id="cameraName" 
+                                   placeholder="e.g., Front Door Camera" required
+                                   style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-white-50">
+                                <i class="fas fa-network-wired me-2"></i>IP Address
+                            </label>
+                            <input type="text" class="form-control" id="cameraIP" 
+                                   placeholder="e.g., 192.168.1.100" required
+                                   pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+                                   style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
+                            <small class="text-white-50">Enter valid IP address (e.g., 192.168.1.100)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-white-50">
+                                <i class="fas fa-plug me-2"></i>Port
+                            </label>
+                            <input type="number" class="form-control" id="cameraPort" 
+                                   value="554" min="1" max="65535" required
+                                   style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
+                            <small class="text-white-50">Default RTSP port is 554</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-white-50">
+                                <i class="fas fa-user me-2"></i>Username
+                            </label>
+                            <input type="text" class="form-control" id="cameraUsername" 
+                                   placeholder="Camera username" required
+                                   style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-white-50">
+                                <i class="fas fa-lock me-2"></i>Password
+                            </label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="cameraPassword" 
+                                       placeholder="Camera password" required
+                                       style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                    <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-white-50">
+                                <i class="fas fa-map-marker-alt me-2"></i>Location (Optional)
+                            </label>
+                            <input type="text" class="form-control" id="cameraLocation" 
+                                   placeholder="e.g., Building A - Entrance" value="default"
+                                   style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
+                        </div>
+
+                        <div class="alert alert-info" style="background: rgba(13, 202, 240, 0.1); border-color: rgba(13, 202, 240, 0.3);">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>Credentials will be stored securely and used to access the camera's live feed.</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="addCamera()">
+                        <i class="fas fa-check me-2"></i>Add Camera
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -851,6 +946,132 @@
             } catch (error) {
                 alert('Error stopping scan: ' + error.message);
             }
+        }
+
+        // Show add camera modal
+        function showAddCameraModal() {
+            const modal = new bootstrap.Modal(document.getElementById('addCameraModal'));
+            modal.show();
+        }
+
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('cameraPassword');
+            const icon = document.getElementById('togglePasswordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Add camera manually
+        async function addCamera() {
+            const name = document.getElementById('cameraName').value.trim();
+            const ip = document.getElementById('cameraIP').value.trim();
+            const port = document.getElementById('cameraPort').value;
+            const username = document.getElementById('cameraUsername').value.trim();
+            const password = document.getElementById('cameraPassword').value;
+            const location = document.getElementById('cameraLocation').value.trim() || 'default';
+
+            // Validate IP address format
+            const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if (!ipPattern.test(ip)) {
+                alert('Please enter a valid IP address (e.g., 192.168.1.100)');
+                return;
+            }
+
+            // Validate required fields
+            if (!name || !ip || !port || !username || !password) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/add_camera', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        ip: ip,
+                        port: parseInt(port),
+                        username: username,
+                        password: password,
+                        location: location
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addCameraModal'));
+                    modal.hide();
+
+                    // Reset form
+                    document.getElementById('addCameraForm').reset();
+                    document.getElementById('cameraPort').value = '554';
+                    document.getElementById('cameraLocation').value = 'default';
+
+                    // Reload devices
+                    loadDiscoveredDevices();
+
+                    // Show success message
+                    showNotification('Camera added successfully!', 'success');
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to add camera'));
+                }
+            } catch (error) {
+                console.error('Error adding camera:', error);
+                alert('Error adding camera: ' + error.message);
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            // Create toast element
+            const toastHTML = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+
+            // Create container if it doesn't exist
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer';
+                container.className = 'toast-container position-fixed top-0 end-0 p-3';
+                container.style.zIndex = '9999';
+                document.body.appendChild(container);
+            }
+
+            // Add toast to container
+            const toastElement = document.createElement('div');
+            toastElement.innerHTML = toastHTML;
+            container.appendChild(toastElement.firstElementChild);
+
+            // Show toast
+            const toast = new bootstrap.Toast(toastElement.firstElementChild);
+            toast.show();
+
+            // Remove after hidden
+            toastElement.firstElementChild.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
         }
 
         // Initial load

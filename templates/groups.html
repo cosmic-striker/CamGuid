@@ -136,6 +136,11 @@
             color: white;
         }
 
+        .form-select option {
+            background: #1a1d21;
+            color: white;
+        }
+
         .form-control::placeholder {
             color: rgba(255, 255, 255, 0.4);
         }
@@ -271,7 +276,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label text-white">Icon</label>
+                            <label class="form-label text-block">Icon</label>
                             <select class="form-select" id="groupIcon">
                                 <option value="fa-layer-group">Default</option>
                                 <option value="fa-parking">Parking</option>
@@ -289,33 +294,9 @@
 
                         <div class="mb-3">
                             <label class="form-label text-white">Select Cameras</label>
-                            <div style="max-height: 300px; overflow-y: auto;">
-                                <div class="camera-checkbox">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="1" id="cam1">
-                                        <label class="form-check-label text-white" for="cam1">
-                                            <i class="fas fa-camera me-2"></i>Camera 1 - Main Entrance
-                                            <span class="badge bg-success ms-2">Online</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="camera-checkbox">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="2" id="cam2">
-                                        <label class="form-check-label text-white" for="cam2">
-                                            <i class="fas fa-camera me-2"></i>Camera 2 - Parking Lot
-                                            <span class="badge bg-success ms-2">Online</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="camera-checkbox">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="3" id="cam3">
-                                        <label class="form-check-label text-white" for="cam3">
-                                            <i class="fas fa-camera me-2"></i>Camera 3 - Warehouse
-                                            <span class="badge bg-danger ms-2">Offline</span>
-                                        </label>
-                                    </div>
+                            <div id="camerasList" style="max-height: 300px; overflow-y: auto;">
+                                <div class="text-center text-white-50 py-3">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading cameras...
                                 </div>
                             </div>
                         </div>
@@ -333,6 +314,56 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let availableCameras = [];
+
+        function loadCameras() {
+            // Load cameras for the selection list
+            fetch('/api/cameras?per_page=1000')
+                .then(response => response.json())
+                .then(data => {
+                    availableCameras = data.cameras || [];
+                    renderCamerasList();
+                })
+                .catch(error => {
+                    console.error('Error loading cameras:', error);
+                    document.getElementById('camerasList').innerHTML = `
+                        <div class="text-center text-danger py-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Error loading cameras
+                        </div>
+                    `;
+                });
+        }
+
+        function renderCamerasList() {
+            const camerasList = document.getElementById('camerasList');
+            
+            if (availableCameras.length === 0) {
+                camerasList.innerHTML = `
+                    <div class="text-center text-white-50 py-3">
+                        <i class="fas fa-info-circle me-2"></i>No cameras available. Please add cameras first.
+                    </div>
+                `;
+                return;
+            }
+
+            camerasList.innerHTML = availableCameras.map(cam => `
+                <div class="camera-checkbox">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${cam.id}" id="cam${cam.id}">
+                        <label class="form-check-label text-white" for="cam${cam.id}">
+                            <i class="fas fa-camera me-2"></i>${cam.name} (${cam.ip})
+                            <span class="badge bg-${cam.status === 'online' ? 'success' : 'danger'} ms-2">${cam.status}</span>
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load cameras when modal is shown
+        document.getElementById('createGroupModal').addEventListener('show.bs.modal', function () {
+            loadCameras();
+        });
+
         function loadGroups() {
             // Load groups from API
             fetch('/api/camera_groups')
@@ -416,13 +447,26 @@
         }
 
         function createGroup() {
+            const name = document.getElementById('groupName').value.trim();
+            
+            if (!name) {
+                alert('Please enter a group name');
+                return;
+            }
+
             const groupData = {
-                name: document.getElementById('groupName').value,
-                description: document.getElementById('groupDescription').value,
-                location: document.getElementById('groupLocation').value,
+                name: name,
+                description: document.getElementById('groupDescription').value.trim(),
+                location: document.getElementById('groupLocation').value.trim(),
                 icon: document.getElementById('groupIcon').value,
-                cameras: Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value)
+                cameras: Array.from(document.querySelectorAll('#camerasList input[type="checkbox"]:checked')).map(cb => parseInt(cb.value))
             };
+
+            // Show loading state
+            const createBtn = event.target;
+            const originalText = createBtn.innerHTML;
+            createBtn.disabled = true;
+            createBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
 
             fetch('/api/camera_groups', {
                 method: 'POST',
@@ -431,19 +475,55 @@
                 },
                 body: JSON.stringify(groupData)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || 'Failed to create group');
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('createGroupModal')).hide();
-                    location.reload();
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createGroupModal'));
+                    modal.hide();
+                    
+                    // Reset form
+                    document.getElementById('createGroupForm').reset();
+                    
+                    // Reload groups
+                    loadGroups();
+                    
+                    // Show success message
+                    showToast('Group created successfully!', 'success');
                 } else {
-                    alert(data.message || 'Failed to create group');
+                    throw new Error(data.message || 'Failed to create group');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error creating group');
+                alert('Error creating group: ' + error.message);
+            })
+            .finally(() => {
+                createBtn.disabled = false;
+                createBtn.innerHTML = originalText;
             });
+        }
+
+        function showToast(message, type = 'success') {
+            // Simple toast notification
+            const toastDiv = document.createElement('div');
+            toastDiv.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+            toastDiv.style.zIndex = '9999';
+            toastDiv.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}
+            `;
+            document.body.appendChild(toastDiv);
+            
+            setTimeout(() => {
+                toastDiv.remove();
+            }, 3000);
         }
 
         function viewGroup(groupId) {

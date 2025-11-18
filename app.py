@@ -133,14 +133,27 @@ try:
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=[os.getenv('RATELIMIT_DEFAULT', "200 per day, 50 per hour")],
-        storage_uri=os.getenv('RATELIMIT_STORAGE_URL', "memory://")
+        default_limits=[os.getenv('RATELIMIT_DEFAULT', "1000 per day, 200 per hour")],
+        storage_uri=os.getenv('RATELIMIT_STORAGE_URL', "memory://"),
+        headers_enabled=True,
+        swallow_errors=True  # Don't break the app if rate limiting fails
     )
 except ImportError:
     limiter = None
     logger.warning('Flask-Limiter not installed. Rate limiting disabled.')
 
-
+# Rate limit error handler
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    """Handle rate limit errors gracefully"""
+    if request.path.startswith('/api/'):
+        return jsonify({
+            'error': 'Rate limit exceeded',
+            'message': 'Too many requests. Please slow down and try again later.'
+        }), 429
+    else:
+        flash('Too many requests. Please wait a moment before trying again.', 'warning')
+        return redirect(request.referrer or url_for('dashboard'))
 
 def log_audit(action, resource=None, resource_id=None, details=None):
     """Helper function to log audit events"""
@@ -492,7 +505,7 @@ def scan_network(start_ip, end_ip, port, timeout=1.0):
     return cameras_found
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute") if limiter else lambda f: f
+@limiter.limit("20 per minute") if limiter else lambda f: f
 def login():
     if request.method == 'POST':
         try:
@@ -602,7 +615,11 @@ def change_password():
             
             # Ensure changes are committed
             try:
+                # Add user to session and commit
+                db.session.add(current_user)
                 db.session.commit()
+                # Refresh the user object to ensure changes are reflected
+                db.session.refresh(current_user)
                 logger.info(f'Password changed successfully for user: {current_user.username}')
                 flash('Password changed successfully! You can now access the dashboard.', 'success')
                 return redirect(url_for('dashboard'))
@@ -692,7 +709,26 @@ def allcam():
 @app.route('/events')
 @login_required
 def events():
-    return render_template('events_improved.html')
+    try:
+        # Get recent events (limit to reasonable number for display)
+        recent_events = Event.query.order_by(Event.timestamp.desc()).limit(50).all()
+        
+        # Get event statistics
+        total_events = Event.query.count()
+        critical_events = Event.query.filter_by(severity='critical').count()
+        warning_events = Event.query.filter_by(severity='warning').count()
+        info_events = Event.query.filter_by(severity='info').count()
+        
+        return render_template('events_improved.html',
+                             events=recent_events,
+                             total_events=total_events,
+                             critical_events=critical_events,
+                             warning_events=warning_events,
+                             info_events=info_events)
+    except Exception as e:
+        logger.error(f'Events error: {e}')
+        flash('Error loading events', 'error')
+        return render_template('events_improved.html', events=[], total_events=0, critical_events=0, warning_events=0, info_events=0)
 
 @app.route('/attendance')
 @login_required
