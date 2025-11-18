@@ -10,7 +10,24 @@ echo "Waiting for PostgreSQL..."
 max_attempts=30
 attempt=0
 
-until pg_isready -h "${POSTGRES_HOST:-db}" -p "${POSTGRES_PORT:-5432}" -U "${POSTGRES_USER:-camguid}" 2>/dev/null; do
+until python3 -c "
+import psycopg2
+import sys
+import os
+try:
+    conn = psycopg2.connect(
+        host=os.getenv('POSTGRES_HOST', 'db'),
+        port=os.getenv('POSTGRES_PORT', '5432'),
+        user=os.getenv('POSTGRES_USER', 'camguid'),
+        password=os.getenv('POSTGRES_PASSWORD', 'camguid_password'),
+        dbname=os.getenv('POSTGRES_DB', 'camguid'),
+        connect_timeout=3
+    )
+    conn.close()
+    sys.exit(0)
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null; do
     attempt=$((attempt+1))
     if [ $attempt -ge $max_attempts ]; then
         echo "ERROR: PostgreSQL did not become ready in time"

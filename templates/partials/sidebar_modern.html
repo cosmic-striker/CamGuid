@@ -100,6 +100,11 @@
             </a>
         </li>
         <li class="sidebar-nav-item">
+            <a class="sidebar-nav-link {% if request.path == '/allcam' %}active{% endif %}" href="/allcam">
+                <i class="fas fa-th-large"></i>All Cameras
+            </a>
+        </li>
+        <li class="sidebar-nav-item">
             <a class="sidebar-nav-link {% if request.path == '/logs' %}active{% endif %}" href="/logs">
                 <i class="fas fa-file-alt"></i>Logs
             </a>

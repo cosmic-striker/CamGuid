@@ -68,6 +68,8 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 }
 app.config['WTF_CSRF_ENABLED'] = os.getenv('WTF_CSRF_ENABLED', 'True').lower() == 'true'
 app.config['WTF_CSRF_TIME_LIMIT'] = int(os.getenv('WTF_CSRF_TIME_LIMIT', 3600))
+app.config['WTF_CSRF_CHECK_DEFAULT'] = True
+app.config['WTF_CSRF_HEADERS'] = ['X-CSRFToken', 'X-CSRF-Token']
 
 # Session security
 from datetime import datetime, timedelta
@@ -571,13 +573,18 @@ def change_password():
             new_password = request.form.get('new_password')
             confirm_password = request.form.get('confirm_password')
             
-            if not all([current_password, new_password, confirm_password]):
-                flash('All fields are required', 'error')
+            if not all([new_password, confirm_password]):
+                flash('New password and confirmation are required', 'error')
                 return render_template('change_password.html')
             
-            if not check_password_hash(current_user.password, current_password):
-                flash('Current password is incorrect', 'error')
-                return render_template('change_password.html')
+            # Only check current password if not forced to change (i.e., not first login)
+            if not current_user.force_password_change:
+                if not current_password:
+                    flash('Current password is required', 'error')
+                    return render_template('change_password.html')
+                if not check_password_hash(current_user.password, current_password):
+                    flash('Current password is incorrect', 'error')
+                    return render_template('change_password.html')
             
             if new_password != confirm_password:
                 flash('New passwords do not match', 'error')
@@ -676,6 +683,12 @@ def video_wall():
     cameras = Camera.query.all()
     return render_template('video_wall.html', cameras=cameras)
 
+@app.route('/allcam')
+@login_required
+def allcam():
+    """All cameras with auto-rotation view"""
+    return render_template('allcam.html')
+
 @app.route('/events')
 @login_required
 def events():
@@ -736,7 +749,6 @@ def camera_scan():
 scan_status = {'running': False, 'progress': 0, 'total': 0, 'found': 0}
 
 @app.route('/scan', methods=['POST'])
-@csrf.exempt
 @login_required
 @operator_required
 def scan():
@@ -827,7 +839,6 @@ def api_scan_status():
     return jsonify(scan_status)
 
 @app.route('/stop_scan', methods=['POST'])
-@csrf.exempt
 @login_required
 def stop_scan():
     """Stop the ongoing network scan"""
@@ -989,7 +1000,6 @@ def update_location(camera_id):
 
 @app.route('/video_feed/<int:camera_id>')
 @login_required
-@csrf.exempt
 def video_feed(camera_id):
     cam = Camera.query.get_or_404(camera_id)
     # Use get_rtsp_url() to include credentials in the stream URL

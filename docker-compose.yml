@@ -25,9 +25,9 @@ services:
   camera-dashboard:
     build: .
     image: ${DOCKERHUB_USERNAME:-your-dockerhub-username}/campy:latest
-    container_name: camguid-app
+    container_name: CamPy
     ports:
-      - "5000:5000"
+      - "2005:5000"
     volumes:
       - ./logs:/app/logs
       - ./.env:/app/.env

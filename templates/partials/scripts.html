@@ -5,6 +5,40 @@
         return token ? token.getAttribute('content') : '';
     }
 
+    // Setup CSRF for all AJAX requests
+    document.addEventListener('DOMContentLoaded', function() {
+        const csrfToken = getCSRFToken();
+        
+        // Add CSRF token to all fetch requests
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (options.method && options.method.toUpperCase() !== 'GET') {
+                options.headers = options.headers || {};
+                if (typeof options.headers === 'object' && !(options.headers instanceof Headers)) {
+                    options.headers['X-CSRFToken'] = csrfToken;
+                } else if (options.headers instanceof Headers) {
+                    options.headers.set('X-CSRFToken', csrfToken);
+                }
+            }
+            return originalFetch(url, options);
+        };
+
+        // Add CSRF token to all XMLHttpRequest
+        const originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+            this._method = method;
+            return originalOpen.apply(this, arguments);
+        };
+
+        const originalSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function(data) {
+            if (this._method && this._method.toUpperCase() !== 'GET') {
+                this.setRequestHeader('X-CSRFToken', csrfToken);
+            }
+            return originalSend.apply(this, arguments);
+        };
+    });
+
     // Show toast notification
     function showToast(message, type = 'info') {
         const toast = document.createElement('div');
